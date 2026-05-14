@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package transactions;
+
+// ==========================================
+// SERVICE
+// ==========================================
+service TransactionService {
+  rpc Deposer          (DepotRequest)        returns (TransactionResponse);
+  rpc Retirer          (RetraitRequest)      returns (TransactionResponse);
+  rpc Virer            (VirementRequest)     returns (TransactionResponse);
+  rpc ObtenirHistorique (HistoriqueRequest)  returns (HistoriqueResponse);
+}
+
+// ==========================================
+// MESSAGES
+// ==========================================
+
+// --- Dépôt d'argent sur un compte ---
+message DepotRequest {
+  string compte_id = 1;   // le compte qui reçoit l'argent
+  double montant   = 2;   // combien on dépose
+  string description = 3; // ex: "Salaire du mois"
+}
+
+// --- Retrait d'argent ---
+message RetraitRequest {
+  string compte_id = 1;
+  double montant   = 2;
+  string description = 3;
+}
+
+// --- Virement entre deux comptes ---
+message VirementRequest {
+  string compte_source      = 1; // compte qui envoie
+  string compte_destination = 2; // compte qui reçoit
+  double montant            = 3;
+  string description        = 4; // ex: "Loyer janvier"
+}
+
+// --- Historique des transactions d'un compte ---
+message HistoriqueRequest {
+  string compte_id = 1;
+  int32  limite    = 2; // nombre max de transactions à retourner
+}
+
+message HistoriqueResponse {
+  repeated TransactionResponse transactions = 1;
+}
+
+// --- Réponse générique pour une transaction ---
+message TransactionResponse {
+  string id                 = 1;
+  string type               = 2; // "depot", "retrait", "virement"
+  double montant            = 3;
+  string compte_source      = 4;
+  string compte_destination = 5;
+  string description        = 6;
+  string date               = 7;
+  bool   succes             = 8;
+  string message_erreur     = 9; // vide si succès
+}
