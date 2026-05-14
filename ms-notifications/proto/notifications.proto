@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package notifications;
+
+service NotificationService {
+  rpc ObtenirNotifications (NotifRequest)      returns (NotifListResponse);
+  rpc MarquerCommeLue      (MarquerLueRequest) returns (NotifResponse);
+  rpc CompterNonLues       (NotifRequest)      returns (CompterResponse);
+}
+
+message NotifRequest {
+  string compte_id = 1;
+}
+
+message MarquerLueRequest {
+  string notif_id = 1;
+}
+
+message CompterResponse {
+  int32 nombre = 1;
+}
+
+message NotifListResponse {
+  repeated NotifResponse notifications = 1;
+}
+
+message NotifResponse {
+  string id         = 1;
+  string compte_id  = 2;
+  string type       = 3;
+  string titre      = 4;
+  string message    = 5;
+  bool   lue        = 6;
+  string created_at = 7;
+}
