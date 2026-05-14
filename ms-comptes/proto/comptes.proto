@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package comptes;
+
+
+service ComptesService {
+  rpc CreerCompte       (CreerCompteRequest)    returns (CompteResponse);
+  rpc ObtenirCompte     (ObtenirCompteRequest)  returns (CompteResponse);
+  rpc ListerComptes     (ListerComptesRequest)  returns (ListerComptesResponse);
+  rpc MettreAJourSolde  (MajSoldeRequest)       returns (CompteResponse);
+  rpc SupprimerCompte   (SupprimerCompteRequest)returns (SupprimerCompteResponse);
+}
+
+
+
+message CreerCompteRequest {
+  string titulaire    = 1;
+  double solde_initial = 2;
+}
+
+
+message ObtenirCompteRequest {
+  string id = 1;
+}
+
+
+message ListerComptesRequest {}
+
+
+message MajSoldeRequest {
+  string id     = 1;
+  double solde  = 2;
+}
+
+
+message SupprimerCompteRequest {
+  string id = 1;
+}
+
+
+message CompteResponse {
+  string id         = 1;
+  string titulaire  = 2;
+  double solde      = 3;
+  string created_at = 4;
+  bool   success    = 5;
+  string message    = 6;
+}
+
+
+message ListerComptesResponse {
+  repeated CompteResponse comptes = 1;
+}
+
+
+message SupprimerCompteResponse {
+  bool   success = 1;
+  string message = 2;
+}
