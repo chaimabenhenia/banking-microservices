@@ -3,6 +3,7 @@ const protoLoader = require('@grpc/proto-loader');
 const path = require('path');
 
 const PROTO_PATH = path.join(__dirname, '..', '..', '..', 'ms-comptes', 'proto', 'comptes.proto');
+const HOST = process.env.GRPC_HOST_COMPTES || 'localhost';
 const PORT = process.env.GRPC_PORT_COMPTES || 50051;
 
 const packageDef = protoLoader.loadSync(PROTO_PATH, {
@@ -15,7 +16,7 @@ const packageDef = protoLoader.loadSync(PROTO_PATH, {
 
 const { comptes } = grpc.loadPackageDefinition(packageDef);
 const client = new comptes.ComptesService(
-  `localhost:${PORT}`,
+  `${HOST}:${PORT}`,
   grpc.credentials.createInsecure()
 );
 

@@ -2,39 +2,105 @@ version: '3.8'
 
 services:
 
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.5.0
-    container_name: banking-zookeeper
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-    ports:
-      - "2181:2181"
+  # ─────────────────────────── Infrastructure ───────────────────────────
 
   kafka:
-    image: confluentinc/cp-kafka:7.5.0
+    image: confluentinc/cp-kafka:8.0.0
     container_name: banking-kafka
-    depends_on:
-      - zookeeper
     ports:
       - "9092:9092"
     environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_LISTENERS: PLAINTEXT_INTERNAL://0.0.0.0:29092,PLAINTEXT_EXTERNAL://0.0.0.0:9092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT_INTERNAL://kafka:29092,PLAINTEXT_EXTERNAL://localhost:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT_INTERNAL:PLAINTEXT,PLAINTEXT_EXTERNAL:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:9093'
+      KAFKA_LISTENERS: 'INTERNAL://0.0.0.0:29092,EXTERNAL://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093'
+      KAFKA_ADVERTISED_LISTENERS: 'INTERNAL://kafka:29092,EXTERNAL://localhost:9092'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'INTERNAL'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_LOG_DIRS: '/var/lib/kafka/data'
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 15s
+      timeout: 10s
+      retries: 8
+      start_period: 30s
+    volumes:
+      - kafka_data:/var/lib/kafka/data
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: banking-kafka-ui
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
     ports:
       - "8080:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: banking-cluster
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+
+  # ─────────────────────────── Microservices ────────────────────────────
+
+  ms-comptes:
+    build:
+      context: ./ms-comptes
+      dockerfile: Dockerfile
+    container_name: banking-ms-comptes
+    ports:
+      - "50051:50051"
+    environment:
+      KAFKA_BROKER: kafka:29092
+      GRPC_PORT_COMPTES: 50051
+    depends_on:
+      kafka:
+        condition: service_healthy
+    volumes:
+      - comptes_data:/app/db
+    restart: on-failure
+
+  ms-transactions:
+    build:
+      context: .
+      dockerfile: ms-transactions/Dockerfile
+    container_name: banking-ms-transactions
+    ports:
+      - "50052:50052"
+    environment:
+      KAFKA_BROKER: kafka:29092
+      GRPC_PORT_TRANSACTIONS: 50052
+      GRPC_HOST_COMPTES: ms-comptes
+      GRPC_PORT_COMPTES: 50051
+    depends_on:
+      kafka:
+        condition: service_healthy
+      ms-comptes:
+        condition: service_started
+    restart: on-failure
+
+  ms-notifications:
+    build:
+      context: ./ms-notifications
+      dockerfile: Dockerfile
+    container_name: banking-ms-notifications
+    ports:
+      - "50053:50053"
+    environment:
+      KAFKA_BROKER: kafka:29092
+      GRPC_PORT_NOTIFICATIONS: 50053
+    depends_on:
+      kafka:
+        condition: service_healthy
+    volumes:
+      - notifications_data:/app/db
+    restart: on-failure
+
+# ──────────────────────────────── Volumes ─────────────────────────────
+
+volumes:
+  kafka_data:
+  comptes_data:
+  notifications_data:

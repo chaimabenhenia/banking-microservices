@@ -6,9 +6,8 @@ const comptesClient = require('../grpc-clients/comptes.client');
 async function deposer(call, callback) {
   const { compte_id, montant, description } = call.request;
 
-  if (!compte_id || !montant || montant <= 0) {
+  if (!compte_id || !montant || montant <= 0)
     return callback({ code: 3, message: 'compte_id et un montant positif sont requis' });
-  }
 
   try {
     const compte = await comptesClient.obtenirCompte(compte_id);
@@ -28,7 +27,6 @@ async function deposer(call, callback) {
 
     await getCollection().insert(transaction);
     kafka.publish('transaction.depot', transaction).catch(() => {});
-
     callback(null, transaction);
   } catch (err) {
     callback({ code: 13, message: err.message });
@@ -38,9 +36,8 @@ async function deposer(call, callback) {
 async function retirer(call, callback) {
   const { compte_id, montant, description } = call.request;
 
-  if (!compte_id || !montant || montant <= 0) {
+  if (!compte_id || !montant || montant <= 0)
     return callback({ code: 3, message: 'compte_id et un montant positif sont requis' });
-  }
 
   try {
     const compte = await comptesClient.obtenirCompte(compte_id);
@@ -77,7 +74,6 @@ async function retirer(call, callback) {
 
     await getCollection().insert(transaction);
     kafka.publish('transaction.retrait', transaction).catch(() => {});
-
     callback(null, transaction);
   } catch (err) {
     callback({ code: 13, message: err.message });
@@ -87,13 +83,11 @@ async function retirer(call, callback) {
 async function virer(call, callback) {
   const { compte_source, compte_destination, montant, description } = call.request;
 
-  if (!compte_source || !compte_destination || !montant || montant <= 0) {
+  if (!compte_source || !compte_destination || !montant || montant <= 0)
     return callback({ code: 3, message: 'compte_source, compte_destination et montant positif sont requis' });
-  }
 
-  if (compte_source === compte_destination) {
+  if (compte_source === compte_destination)
     return callback({ code: 3, message: 'Les comptes source et destination doivent être différents' });
-  }
 
   try {
     const [source, destination] = await Promise.all([
@@ -136,7 +130,6 @@ async function virer(call, callback) {
 
     await getCollection().insert(transaction);
     kafka.publish('transaction.virement', transaction).catch(() => {});
-
     callback(null, transaction);
   } catch (err) {
     callback({ code: 13, message: err.message });
@@ -146,9 +139,8 @@ async function virer(call, callback) {
 async function obtenirHistorique(call, callback) {
   const { compte_id, limite } = call.request;
 
-  if (!compte_id) {
+  if (!compte_id)
     return callback({ code: 3, message: 'compte_id est requis' });
-  }
 
   try {
     const limit = limite && limite > 0 ? limite : 20;

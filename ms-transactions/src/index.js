@@ -22,7 +22,7 @@ async function main() {
 }
 
 main().catch(err => {
-  console.error('Erreur fatale au démarrage:', err);
+  console.error('Erreur fatale:', err);
   process.exit(1);
 });
 

@@ -1,5 +1,14 @@
 const { createRxDatabase } = require('rxdb');
-const { getRxStorageMemory } = require('rxdb/plugins/storage-memory');
+const { getRxStorageLoki } = require('rxdb/plugins/storage-lokijs');
+const LokiFsAdapter = require('lokijs/src/loki-fs-sync-adapter');
+const path = require('path');
+const fs = require('fs');
+
+const DB_DIR  = path.join(__dirname, '../../db');
+const DB_NAME = path.join(DB_DIR, 'transactions');
+
+// Crée le dossier db/ si absent
+fs.mkdirSync(DB_DIR, { recursive: true });
 
 const transactionSchema = {
   version: 0,
@@ -23,8 +32,12 @@ let collection = null;
 
 async function initDatabase() {
   const db = await createRxDatabase({
-    name: 'transactions_db',
-    storage: getRxStorageMemory(),
+    name: DB_NAME,
+    storage: getRxStorageLoki({
+      adapter: new LokiFsAdapter(),
+      autosave: true,
+      autosaveInterval: 500,   // sauvegarde sur disque toutes les 500ms
+    }),
     ignoreDuplicate: true,
   });
 
@@ -33,7 +46,7 @@ async function initDatabase() {
   });
 
   collection = db.transactions;
-  console.log('RxDB transactions initialisée (in-memory)');
+  console.log('RxDB transactions initialisée → db/transactions.db (LokiJS persistent)');
   return db;
 }
 
